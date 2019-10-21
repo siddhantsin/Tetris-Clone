@@ -1,7 +1,7 @@
 import pygame as pg
 from settings import *
 from blocks import *
-import random, time
+import random, time, sys
 from pygame.locals import *
 
 ###### NOTESSS #######
@@ -29,20 +29,18 @@ class Game():
         self.TITLE_FONT = pg.font.Font(pg.font.match_font("Comic Sans"), 100)
         self.STD_FONT = pg.font.Font(pg.font.match_font("Comic Sans"), 20)
         self.SCORE_FONT = pg.font.Font(pg.font.match_font("Comic Sans"), 40)
-        self.running = True
-            
                  
     def runGame(self):
         board = self.getNewBoard()
         lastMoveDownTime = time.time()
         lastMoveSidewaysTime = time.time()
         lastFallTime = time.time()
+        lastRotateTime = time.time()
         movingDown = False # note: there is no movingUp variable
         movingLeft = False
         movingRight = False
         score = 0
         fallFreq = 0.3
-    
     
         fallingPiece = self.getNewPiece()
         nextPiece = self.getNewPiece()
@@ -55,17 +53,17 @@ class Game():
                 lastFallTime = time.time() # reset lastFallTime
     
                 if not self.isValidPosition(board, fallingPiece):
+                    g.showScreen('Game Over')
+                    pg.quit()                    
                     return # can't fit a new piece on the board, so game over
     
             if self.closeButtonPressed():
                 return # The wndow has been closed, so game over.
-
-            
- #           for event in pg.event.get(): # event handling loop
                 
             KEY = pg.key.get_pressed()                
-            if KEY[pg.K_UP]:
+            if KEY[pg.K_UP] and time.time() - lastRotateTime > ROTATEFREQ:
                 fallingPiece['rotation'] = (fallingPiece['rotation'] + 1) % len(PIECES[fallingPiece['shape']])
+                lastRotateTime = time.time()
                 if not self.isValidPosition(board, fallingPiece):
                     fallingPiece['rotation'] = (fallingPiece['rotation'] - 1) % len(PIECES[fallingPiece['shape']])
                     
@@ -81,7 +79,7 @@ class Game():
                 
             elif KEY[pg.K_p]:
                 win.fill(BGCOLOR)
-                showTextScreen('Paused')
+                self.showScreen('Paused')
                 lastFallTime = time.time()
                 lastMoveDownTime = time.time()
                 lastMoveSidewaysTime = time.time()
@@ -92,17 +90,7 @@ class Game():
                     fallingPiece['y'] += 1
                 lastMoveDownTime = time.time()
                 
-                        
-            elif (KEY[pg.K_p]):
-                # Pausing the game
-                win.fill(BGCOLOR)
-                pg.mixer.music.stop()
-                self.showTextScreen('Paused') # pause until a key press
-                pg.mixer.music.play(-1, 0.0)
-                lastFallTime = time.time()
-                lastMoveDownTime = time.time()
-                lastMoveSidewaysTime = time.time()
-                                   
+            
             if time.time() - lastFallTime > fallFreq:
                 # see if the piece has landed
                 if not self.isValidPosition(board, fallingPiece, adjY=1):
@@ -156,20 +144,28 @@ class Game():
         # This function displays large text in the
         # center of the screen until a key is pressed.
         
-        titleObj = self.TITLE_FONT.render(text, True, WHITE)
+        titleObj = self.TITLE_FONT.render(text, True, BLACK)
         titleRect = titleObj.get_rect()             
         titleRect.center = (int(WINDOWWIDTH / 2) , int(WINDOWHEIGHT / 2) )
-        win.blit(titleObj, titleRect)            
+        win.blit(titleObj, titleRect)
+        titleObj2 = self.TITLE_FONT.render(text, True, WHITE)
+        titleRect2 = titleObj.get_rect()             
+        titleRect2.center = (int(WINDOWWIDTH / 2)-2 , int(WINDOWHEIGHT / 2) )
+        win.blit(titleObj2, titleRect2)           
         
         # Draw the additional "Press a key to play." text.
-        bodyObj = self.STD_FONT.render("Press any key to continue", True, WHITE)
+        bodyObj = self.STD_FONT.render("Press any key to continue", True, BLACK)
         bodyRect = bodyObj.get_rect()  
         bodyRect.center = (int(WINDOWWIDTH / 2), int(WINDOWHEIGHT / 2) + 100)
-        win.blit(bodyObj, bodyRect)
+        bodyObj2 = self.STD_FONT.render("Press any key to continue", True, WHITE)
+        bodyRect2 = bodyObj.get_rect()  
+        bodyRect2.center = (int(WINDOWWIDTH / 2)-2, int(WINDOWHEIGHT / 2) + 100)        
+        win.blit(bodyObj2, bodyRect2)
+        pg.display.update()
     
         while self.senseAnyKey() == False:
-            pg.display.update()
-            Clock.tick()   
+            Clock.tick()  
+            self.closeButtonPressed()
             
     """
     def makeTextObjs(self, text, font, color):
@@ -201,6 +197,7 @@ class Game():
         for event in pg.event.get():
             if event.type == pg.QUIT:
                 pg.quit()
+                sys.exit()
                 
                 
     def addToBoard(self, board, piece):
@@ -250,7 +247,7 @@ class Game():
                     self.drawCell(piece['color'], pixelx + (x * BOXSIZE), pixely + (y * BOXSIZE))   
                     
     def drawScore(self, score):
-        bodyObj = self.SCORE_FONT.render("Score: " + str(score), True, WHITE)
+        bodyObj = self.SCORE_FONT.render("Lines: " + str(score), True, WHITE)
         bodyRect = bodyObj.get_rect()  
         bodyRect.center = (int(WINDOWWIDTH / 2) + 180, int(WINDOWHEIGHT / 2))
         win.blit(bodyObj, bodyRect)        
@@ -270,5 +267,5 @@ g.showScreen('Start')
 Clock.tick(FPS)
 g.runGame()
     
-g.showScreen('Game Over')
-pg.quit()
+#g.showScreen('Game Over')
+#pg.quit()
