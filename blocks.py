@@ -1,5 +1,5 @@
 import pygame as pg
-from settings_new import *
+from settings import *
 
 S_SHAPE_TEMPLATE = [['.....',
                      '.....',
